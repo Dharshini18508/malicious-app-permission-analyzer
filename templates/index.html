@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Malicious App Permission Analyzer</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #071b3a, #063b63);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 900px;
+            margin: auto;
+            padding: 30px 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .shield {
+            font-size: 55px;
+        }
+
+        h1 {
+            margin: 8px 0;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #b9eaff;
+            font-size: 16px;
+        }
+
+        .card {
+            background: #ffffff;
+            color: #10233f;
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: #07558a;
+        }
+
+        .upload-box {
+            border: 2px dashed #1597d4;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            background: #eefaff;
+        }
+
+        input[type="file"] {
+            margin: 20px 0;
+            width: 100%;
+        }
+
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 13px 25px;
+            background: #087fce;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #055c96;
+        }
+
+        .error {
+            background: #ffe5e5;
+            color: #b00020;
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .result {
+            margin-top: 25px;
+        }
+
+        .risk {
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            background: #fff3cd;
+            color: #7a5200;
+        }
+
+        .risk.high {
+            background: #ffe0e0;
+            color: #b00020;
+        }
+
+        .risk.low {
+            background: #dcffe5;
+            color: #08752b;
+        }
+
+        .score {
+            font-size: 40px;
+            font-weight: bold;
+        }
+
+        .permission {
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            background: #f1f5f9;
+            word-break: break-word;
+        }
+
+        .high-permission {
+            border-left: 5px solid #e53935;
+        }
+
+        .medium-permission {
+            border-left: 5px solid #ff9800;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #b9eaff;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <div class="shield">🛡️</div>
+
+        <h1>Malicious App Permission Analyzer</h1>
+
+        <div class="subtitle">
+            Analyze • Detect • Stay Safe
+        </div>
+    </div>
+
+
+    <div class="card">
+
+        <h2>🔐 APK Security Analysis</h2>
+
+        <p>
+            Upload an Android APK to analyze its permissions
+            and identify potential security risks.
+        </p>
+
+        <form action="/analyze" method="POST" enctype="multipart/form-data">
+
+            <div class="upload-box">
+
+                <h3>📱 Upload APK File</h3>
+
+                <input
+                    type="file"
+                    name="apk_file"
+                    accept=".apk"
+                    required
+                >
+
+                <br>
+
+                <button type="submit">
+                    🔍 Analyze APK
+                </button>
+
+            </div>
+
+        </form>
+
+
+        {% if error %}
+            <div class="error">
+                ⚠️ {{ error }}
+            </div>
+        {% endif %}
+
+
+        {% if filename %}
+
+        <div class="result">
+
+            <h2>📊 Analysis Result</h2>
+
+            <p>
+                <strong>File:</strong> {{ filename }}
+            </p>
+
+
+            <div class="risk
+                {% if level == 'HIGH RISK' %}
+                    high
+                {% elif level == 'LOW RISK' %}
+                    low
+                {% endif %}
+            ">
+
+                <div class="score">
+                    {{ score }}/100
+                </div>
+
+                <h2>{{ level }}</h2>
+
+            </div>
+
+
+            <h3>🔍 Detected Permissions</h3>
+
+            {% for permission in permissions %}
+
+                <div class="permission
+                    {% if permission in high_permissions %}
+                        high-permission
+                    {% elif permission in medium_permissions %}
+                        medium-permission
+                    {% endif %}
+                ">
+
+                    {{ permission }}
+
+                </div>
+
+            {% endfor %}
+
+
+            {% if high_permissions %}
+
+                <h3>🔴 High-Risk Permissions</h3>
+
+                {% for permission in high_permissions %}
+
+                    <div class="permission high-permission">
+                        ⚠️ {{ permission }}
+                    </div>
+
+                {% endfor %}
+
+            {% endif %}
+
+
+            {% if medium_permissions %}
+
+                <h3>🟠 Medium-Risk Permissions</h3>
+
+                {% for permission in medium_permissions %}
+
+                    <div class="permission medium-permission">
+                        ⚠️ {{ permission }}
+                    </div>
+
+                {% endfor %}
+
+            {% endif %}
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="footer">
+        B.E. CSE (Cyber Security) • Project Expo 2026
+        <br>
+        Malicious App Permission Analyzer
+    </div>
+
+</div>
+
+</body>
+</html>
