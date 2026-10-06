@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request
 import os
+import re
+from apkutils import APK
 
 app = Flask(__name__)
 
@@ -7,10 +9,9 @@ UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
 
-# Permission risk levels
 HIGH_RISK = {
     "android.permission.READ_SMS",
     "android.permission.SEND_SMS",
@@ -24,6 +25,7 @@ HIGH_RISK = {
     "android.permission.READ_CALL_LOG",
     "android.permission.WRITE_CALL_LOG",
 }
+
 
 MEDIUM_RISK = {
     "android.permission.READ_PHONE_STATE",
@@ -50,7 +52,6 @@ def calculate_risk(permissions):
             score += 7
             medium_permissions.append(permission)
 
-    # Limit score to 100
     score = min(score, 100)
 
     if score >= 60:
@@ -61,6 +62,28 @@ def calculate_risk(permissions):
         level = "LOW RISK"
 
     return score, level, high_permissions, medium_permissions
+
+
+def extract_permissions(apk_path):
+
+    permissions = []
+
+    try:
+        with APK.from_file(apk_path) as apk:
+
+            manifest = apk.get_manifest()
+
+            found = re.findall(
+                r'<uses-permission[^>]+android:name="([^"]+)"',
+                manifest
+            )
+
+            permissions = sorted(set(found))
+
+    except Exception as error:
+        print("APK analysis error:", error)
+
+    return permissions
 
 
 @app.route("/")
@@ -98,14 +121,13 @@ def analyze():
 
     file.save(filepath)
 
-    # Demo permission analysis
-    # Real APK manifest extraction will be added in the next step.
-    permissions = [
-        "android.permission.INTERNET",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.ACCESS_FINE_LOCATION",
-    ]
+    permissions = extract_permissions(filepath)
+
+    if not permissions:
+        return render_template(
+            "index.html",
+            error="No permissions could be extracted from this APK."
+        )
 
     score, level, high_permissions, medium_permissions = calculate_risk(
         permissions
@@ -118,7 +140,7 @@ def analyze():
         score=score,
         level=level,
         high_permissions=high_permissions,
-        medium_permissions=medium_permissions,
+        medium_permissions=medium_permissions
     )
 
 
